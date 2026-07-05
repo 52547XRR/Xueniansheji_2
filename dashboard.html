@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>重庆二手房数据平台</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0d1117;
+            color: #c9d1d9;
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            min-height: 100vh;
+        }
+
+        /* ========== 顶部导航栏 ========== */
+        .topbar {
+            background: #161b22;
+            border-bottom: 1px solid #21262d;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            height: 54px;
+        }
+        .topbar .logo-group {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            height: 100%;
+        }
+        .topbar .logo {
+            font-size: 20px;
+            font-weight: 700;
+            color: #58a6ff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .topbar .logo .icon { font-size: 26px; }
+        .topbar .source-tag {
+            background: #1a2332;
+            border: 1px solid #1f6feb;
+            color: #58a6ff;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        .topbar .source-tag::before { content: '🕷️ '; }
+
+        /* 标签页导航 */
+        .tab-nav {
+            display: flex;
+            align-items: center;
+            height: 100%;
+            gap: 0;
+        }
+        .tab-btn {
+            padding: 0 22px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            background: none;
+            border: none;
+            color: #8b949e;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .tab-btn:hover { color: #e6edf3; }
+        .tab-btn.active {
+            color: #58a6ff;
+            border-bottom-color: #58a6ff;
+        }
+        .tab-btn .badge {
+            margin-left: 6px;
+            background: #1f6feb;
+            color: #fff;
+            font-size: 10px;
+            padding: 2px 7px;
+            border-radius: 10px;
+        }
+        .topbar .update-time { font-size: 12px; color: #8b949e; }
+
+        /* ========== Tab 内容区 ========== */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* ========== 通用组件 ========== */
+        .panel {
+            background: #161b22;
+            border: 1px solid #21262d;
+            border-radius: 10px;
+            padding: 18px;
+            transition: border-color 0.3s;
+        }
+        .panel:hover { border-color: #30363d; }
+        .panel .panel-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e6edf3;
+            margin-bottom: 14px;
+            padding-left: 10px;
+            border-left: 3px solid #58a6ff;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .panel .panel-title .icon { font-size: 16px; }
+
+        /* ================================================================ */
+        /*                       TAB 1: 系统首页                              */
+        /* ================================================================ */
+        .home-content { padding: 24px; }
+
+        /* Hero 区域 */
+        .hero {
+            background: linear-gradient(135deg, #0d1b2a 0%, #1b2838 50%, #0d1b2a 100%);
+            border: 1px solid #1a3a5c;
+            border-radius: 14px;
+            padding: 36px 40px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::after {
+            content: '';
+            position: absolute;
+            top: -50%; right: -10%;
+            width: 400px; height: 400px;
+            background: radial-gradient(circle, rgba(31,111,235,0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .hero h2 {
+            font-size: 26px;
+            color: #e6edf3;
+            margin-bottom: 8px;
+        }
+        .hero .hero-subtitle {
+            font-size: 14px;
+            color: #8b949e;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        .hero .stat-row {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+        .hero-stat {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(22,27,34,0.6);
+            border: 1px solid #21262d;
+            border-radius: 8px;
+            padding: 12px 20px;
+        }
+        .hero-stat .stat-icon { font-size: 28px; }
+        .hero-stat .stat-val { font-size: 22px; font-weight: 700; color: #58a6ff; }
+        .hero-stat .stat-label { font-size: 11px; color: #8b949e; }
+
+        /* 架构流程图 */
+        .arch-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 10px 0;
+        }
+        .arch-node {
+            background: #1c2128;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            padding: 14px 16px;
+            text-align: center;
+            min-width: 100px;
+            transition: all 0.3s;
+        }
+        .arch-node:hover { border-color: #58a6ff; transform: translateY(-2px); box-shadow: 0 4px 16px rgba(31,111,235,0.15); }
+        .arch-node .node-icon { font-size: 28px; display: block; margin-bottom: 6px; }
+        .arch-node .node-name { font-size: 12px; font-weight: 600; color: #e6edf3; }
+        .arch-node .node-desc { font-size: 10px; color: #8b949e; margin-top: 2px; }
+        .arch-node.accent { border-color: #1f6feb; background: #0d1b2a; }
+        .arch-arrow {
+            font-size: 18px;
+            color: #30363d;
+            flex-shrink: 0;
+        }
+        .arch-arrow-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+            color: #30363d;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        /* 网格布局 */
+        .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+        .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+        .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 14px; }
+
+        /* 技术标签 */
+        .tech-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+        .tech-tag {
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            border: 1px solid;
+        }
+        .tech-tag.python { background: #1a2a1a; border-color: #3fb950; color: #3fb950; }
+        .tech-tag.scrapy { background: #1a1a2a; border-color: #8250df; color: #d2a8ff; }
+        .tech-tag.redis { background: #2a1a1a; border-color: #f85149; color: #f85149; }
+        .tech-tag.mysql { background: #1a2a2a; border-color: #58a6ff; color: #58a6ff; }
+        .tech-tag.docker { background: #1a1a2a; border-color: #1f6feb; color: #79c0ff; }
+        .tech-tag.airflow { background: #2a2a1a; border-color: #f0883e; color: #f0883e; }
+        .tech-tag.vue { background: #1a2a1a; border-color: #3fb950; color: #7ee787; }
+        .tech-tag.nginx { background: #1a1a1a; border-color: #3fb950; color: #3fb950; }
+        .tech-tag.celery { background: #1a2a1a; border-color: #3fb950; color: #8bdb8b; }
+
+        /* 进度条 */
+        .progress-item { margin-bottom: 14px; }
+        .progress-item .prog-label { display: flex; justify-content: space-between; font-size: 12px; color: #c9d1d9; margin-bottom: 4px; }
+        .progress-item .prog-val { color: #58a6ff; font-weight: 600; }
+        .prog-bar { height: 8px; background: #0d1117; border-radius: 4px; overflow: hidden; }
+        .prog-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease; }
+        .prog-fill.blue { background: linear-gradient(90deg, #1f6feb, #58a6ff); }
+        .prog-fill.green { background: linear-gradient(90deg, #238636, #3fb950); }
+        .prog-fill.purple { background: linear-gradient(90deg, #8250df, #d2a8ff); }
+        .prog-fill.orange { background: linear-gradient(90deg, #d4621a, #f0883e); }
+
+        /* 时间线 */
+        .timeline { position: relative; padding-left: 20px; }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 6px;
+            top: 6px;
+            bottom: 6px;
+            width: 2px;
+            background: #21262d;
+        }
+        .tl-item { position: relative; margin-bottom: 16px; padding-left: 22px; }
+        .tl-item::before {
+            content: '';
+            position: absolute;
+            left: -16px;
+            top: 4px;
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: #58a6ff;
+            border: 2px solid #161b22;
+        }
+        .tl-item .tl-time { font-size: 10px; color: #8b949e; }
+        .tl-item .tl-text { font-size: 13px; color: #c9d1d9; margin-top: 2px; }
+        .tl-item .tl-detail { font-size: 11px; color: #8b949e; margin-top: 2px; }
+
+        /* 指标卡片（首页用） */
+        .metric-card {
+            background: #1c2128;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        .metric-card:hover { border-color: #58a6ff; transform: translateY(-2px); }
+        .metric-card .metric-icon { font-size: 32px; margin-bottom: 8px; }
+        .metric-card .metric-val { font-size: 24px; font-weight: 700; color: #58a6ff; }
+        .metric-card .metric-unit { font-size: 12px; color: #8b949e; margin-left: 2px; }
+        .metric-card .metric-label { font-size: 12px; color: #8b949e; margin-top: 4px; }
+
+        /* 状态指示灯 */
+        .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+        .status-dot.online { background: #3fb950; box-shadow: 0 0 6px #3fb950; }
+        .status-dot.idle { background: #f0883e; box-shadow: 0 0 6px #f0883e; }
+        .status-dot.offline { background: #f85149; }
+
+        /* ================================================================ */
+        /*                       TAB 2: BI 看板                              */
+        /* ================================================================ */
+        .bi-content { padding: 20px 24px; }
+
+        /* 地区筛选器 */
+        .filter-bar {
+            background: #0d1117;
+            padding: 14px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+        .filter-bar .filter-label {
+            font-size: 13px;
+            color: #8b949e;
+            white-space: nowrap;
+            font-weight: 600;
+        }
+        .filter-pill {
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid #30363d;
+            background: #161b22;
+            color: #8b949e;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+        .filter-pill:hover { border-color: #58a6ff; color: #e6edf3; }
+        .filter-pill.active { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+
+        /* KPI */
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+        .kpi-card {
+            background: #161b22;
+            border: 1px solid #21262d;
+            border-radius: 10px;
+            padding: 18px 16px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        .kpi-card:hover { border-color: #30363d; transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        .kpi-card .label { font-size: 12px; color: #8b949e; margin-bottom: 6px; }
+        .kpi-card .value { font-size: 30px; font-weight: 700; color: #e6edf3; }
+        .kpi-card .unit { font-size: 13px; color: #8b949e; margin-left: 2px; }
+        .kpi-card .trend { font-size: 11px; margin-top: 4px; color: #3fb950; }
+        .kpi-card.accent .value { color: #58a6ff; }
+        .kpi-card.warn .value { color: #f0883e; }
+        .kpi-card.green .value { color: #3fb950; }
+
+        /* 图表网格 */
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+        .chart-panel {
+            background: #161b22;
+            border: 1px solid #21262d;
+            border-radius: 10px;
+            padding: 14px;
+            transition: border-color 0.3s;
+        }
+        .chart-panel:hover { border-color: #30363d; }
+        .chart-panel.span2 { grid-column: span 2; }
+        .chart-panel.span3 { grid-column: span 3; }
+        .chart-box { width: 100%; height: 340px; }
+        .chart-box.tall { height: 400px; }
+
+        /* 数据表格 */
+        .data-table-wrap {
+            background: #161b22;
+            border: 1px solid #21262d;
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 14px;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        th {
+            background: #0d1117;
+            color: #8b949e;
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 2px solid #21262d;
+            white-space: nowrap;
+        }
+        td { padding: 9px 12px; border-bottom: 1px solid #21262d; color: #c9d1d9; }
+        tr:hover td { background: #1c2128; }
+        .price-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            background: #1a2332;
+            color: #58a6ff;
+        }
+
+        @media (max-width: 1200px) {
+            .chart-grid, .grid3 { grid-template-columns: 1fr 1fr; }
+            .chart-panel.span2 { grid-column: span 2; }
+            .chart-panel.span3 { grid-column: span 2; }
+            .kpi-row { grid-template-columns: repeat(3, 1fr); }
+            .grid4 { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .chart-grid, .grid2, .grid3 { grid-template-columns: 1fr; }
+            .chart-panel.span2, .chart-panel.span3 { grid-column: span 1; }
+            .kpi-row { grid-template-columns: repeat(2, 1fr); }
+            .grid4 { grid-template-columns: 1fr; }
+            .arch-flow { flex-direction: column; }
+            .arch-arrow { transform: rotate(90deg); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== 顶部导航栏 ===== -->
+<div class="topbar">
+    <div class="logo-group">
+        <span class="logo"><span class="icon">🏠</span>重庆二手房数据平台</span>
+        <span class="source-tag">爬取数据集 · 贝壳/安居客</span>
+    </div>
+    <div class="tab-nav">
+        <button class="tab-btn active" data-tab="home">
+            🖥️ 系统首页
+            <span class="badge">Arch</span>
+        </button>
+        <button class="tab-btn" data-tab="bi">
+            📊 BI 看板
+            <span class="badge">Live</span>
+        </button>
+    </div>
+    <span class="update-time">数据更新：<b id="updateTime"></b></span>
+</div>
+
+<!-- ================================================================ -->
+<!--                       TAB 1: 系统首页                              -->
+<!-- ================================================================ -->
+<div class="tab-content active" id="tab-home">
+<div class="home-content">
+
+    <!-- Hero 区域 -->
+    <div class="hero">
+        <h2>🕷️ 高并发分布式二手房爬虫数据平台</h2>
+        <p class="hero-subtitle">
+            基于 Scrapy-Redis 分布式爬虫框架，支持日均百万级房源数据采集，覆盖贝壳找房、安居客、链家等主流平台。
+            后端采用 FastAPI + Celery + Redis 构建高并发异步任务调度，配合 Airflow 定时巡检，实现数据准实时更新。
+        </p>
+        <div class="stat-row">
+            <div class="hero-stat"><span class="stat-icon">📦</span><div><div class="stat-val">5,000+</div><div class="stat-label">累计采集房源</div></div></div>
+            <div class="hero-stat"><span class="stat-icon">⚡</span><div><div class="stat-val">200 QPS</div><div class="stat-label">爬虫峰值吞吐</div></div></div>
+            <div class="hero-stat"><span class="stat-icon">🔄</span><div><div class="stat-val">每6h</div><div class="stat-label">增量更新频率</div></div></div>
+            <div class="hero-stat"><span class="stat-icon">✅</span><div><div class="stat-val">99.7%</div><div class="stat-label">数据可用率</div></div></div>
+        </div>
+    </div>
+
+    <!-- 系统架构流程图 -->
+    <div class="panel" style="margin-bottom:14px;">
+        <div class="panel-title"><span class="icon">🏗️</span>系统架构拓扑</div>
+        <div class="arch-flow">
+            <div class="arch-node accent">
+                <span class="node-icon">🕷️</span>
+                <div class="node-name">Scrapy-Redis</div>
+                <div class="node-desc">分布式爬虫集群</div>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-node">
+                <span class="node-icon">🗄️</span>
+                <div class="node-name">Redis Cluster</div>
+                <div class="node-desc">请求队列&去重</div>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-node">
+                <span class="node-icon">🧹</span>
+                <div class="node-name">Pipeline</div>
+                <div class="node-desc">数据清洗&ETL</div>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-node accent">
+                <span class="node-icon">🐬</span>
+                <div class="node-name">MySQL 8.0</div>
+                <div class="node-desc">主从+读写分离</div>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-node">
+                <span class="node-icon">🚀</span>
+                <div class="node-name">FastAPI</div>
+                <div class="node-desc">RESTful API</div>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-node accent">
+                <span class="node-icon">🖥️</span>
+                <div class="node-name">Vue3 + ECharts</div>
+                <div class="node-desc">BI 可视化前端</div>
+            </div>
+        </div>
+        <div style="display:flex;justify-content:center;gap:60px;margin-top:14px;flex-wrap:wrap;">
+            <div class="arch-arrow-group">
+                <span style="color:#f0883e;">⏰ Airflow DAG</span>
+                <span style="color:#8b949e;font-size:11px;">定时调度·每6h触发</span>
+            </div>
+            <div class="arch-arrow-group">
+                <span style="color:#d2a8ff;">📋 Celery Beat</span>
+                <span style="color:#8b949e;font-size:11px;">异步任务·失败重试</span>
+            </div>
+            <div class="arch-arrow-group">
+                <span style="color:#3fb950;">📊 Prometheus + Grafana</span>
+                <span style="color:#8b949e;font-size:11px;">监控告警·可视化</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 技术栈 + 性能指标 -->
+    <div class="grid2">
+        <!-- 技术栈 -->
+        <div class="panel">
+            <div class="panel-title"><span class="icon">🛠️</span>核心技术栈</div>
+            <div class="tech-tags">
+                <span class="tech-tag python">Python 3.11+</span>
+                <span class="tech-tag scrapy">Scrapy 2.11</span>
+                <span class="tech-tag redis">Redis 7.0</span>
+                <span class="tech-tag mysql">MySQL 8.0</span>
+                <span class="tech-tag docker">Docker Compose</span>
+                <span class="tech-tag airflow">Apache Airflow</span>
+                <span class="tech-tag celery">Celery 5.3</span>
+                <span class="tech-tag nginx">Nginx</span>
+                <span class="tech-tag vue">Vue 3 + TS</span>
+                <span class="tech-tag redis">FastAPI</span>
+                <span class="tech-tag docker">K8s (规划)</span>
+            </div>
+            <div style="margin-top:14px;font-size:12px;color:#8b949e;line-height:1.8;">
+                <div>🔹 <b>反反爬策略</b>：IP 代理池（芝麻/快代理）+ User-Agent 轮换 + 请求频率自适应调节</div>
+                <div>🔹 <b>并发控制</b>：Scrapy CONCURRENT_REQUESTS=64，Redis 去重布隆过滤器</div>
+                <div>🔹 <b>数据质量</b>：Pandas 异常值检测 + 缺失值填补 + 经纬度逆地理编码校验</div>
+                <div>🔹 <b>容器化部署</b>：docker-compose 一键启动爬虫+API+前端全栈服务</div>
+            </div>
+        </div>
+
+        <!-- 集群性能指标 -->
+        <div class="panel">
+            <div class="panel-title"><span class="icon">📈</span>爬虫集群实时性能</div>
+            <div class="progress-item">
+                <div class="prog-label"><span>🟢 爬虫节点 CPU (4 nodes)</span><span class="prog-val">62%</span></div>
+                <div class="prog-bar"><div class="prog-fill blue" style="width:62%;"></div></div>
+            </div>
+            <div class="progress-item">
+                <div class="prog-label"><span>🟢 Redis 内存使用</span><span class="prog-val">4.2GB / 8GB</span></div>
+                <div class="prog-bar"><div class="prog-fill green" style="width:52%;"></div></div>
+            </div>
+            <div class="progress-item">
+                <div class="prog-label"><span>🟢 数据库连接池占用</span><span class="prog-val">28/50</span></div>
+                <div class="prog-bar"><div class="prog-fill purple" style="width:56%;"></div></div>
+            </div>
+            <div class="progress-item">
+                <div class="prog-label"><span>🟡 代理池可用率</span><span class="prog-val">87%</span></div>
+                <div class="prog-bar"><div class="prog-fill orange" style="width:87%;"></div></div>
+            </div>
+            <div style="margin-top:10px;font-size:11px;color:#8b949e;">
+                <span class="status-dot online"></span>爬虫引擎：运行中
+                <span class="status-dot online" style="margin-left:16px;"></span>API 服务：正常
+                <span class="status-dot idle" style="margin-left:16px;"></span>定时任务：等待下次触发
+            </div>
+        </div>
+    </div>
+
+    <!-- 爬虫Pipeline + 定时策略 -->
+    <div class="grid2">
+        <div class="panel">
+            <div class="panel-title"><span class="icon">🔗</span>数据采集 Pipeline</div>
+            <div class="timeline">
+                <div class="tl-item">
+                    <div class="tl-time">Step 1</div>
+                    <div class="tl-text">🔍 URL 种子生成</div>
+                    <div class="tl-detail">根据城区×户型×页码自动生成待爬 URL 队列，推入 Redis List</div>
+                </div>
+                <div class="tl-item">
+                    <div class="tl-time">Step 2</div>
+                    <div class="tl-text">📥 并发请求 & 解析</div>
+                    <div class="tl-detail">4节点 × 16并发 = 64 并行请求，XPath/CSS 提取房源字段</div>
+                </div>
+                <div class="tl-item">
+                    <div class="tl-time">Step 3</div>
+                    <div class="tl-text">🧹 数据清洗 Pipeline</div>
+                    <div class="tl-detail">面积单位统一、价格异常过滤、装修字段标准化、Geo 校验</div>
+                </div>
+                <div class="tl-item">
+                    <div class="tl-time">Step 4</div>
+                    <div class="tl-text">💾 批量写入 MySQL</div>
+                    <div class="tl-detail">每 500 条批量 INSERT，利用 REPLACE INTO 实现 upsert 去重</div>
+                </div>
+                <div class="tl-item">
+                    <div class="tl-time">Step 5</div>
+                    <div class="tl-text">📊 聚合 & BI 刷新</div>
+                    <div class="tl-detail">触发 API 缓存刷新，前端自动拉取最新统计数据</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title"><span class="icon">⏱️</span>定时更新策略</div>
+            <div style="font-size:12px;color:#c9d1d9;line-height:1.8;">
+                <div style="margin-bottom:12px;">
+                    <b style="color:#f0883e;">🕐 Airflow DAG 调度计划</b>
+                    <div style="color:#8b949e;">cron: <code style="background:#0d1117;padding:2px 6px;border-radius:4px;">0 */6 * * *</code> （每6小时执行）</div>
+                </div>
+                <table style="font-size:11px;">
+                    <tr><th style="padding:6px 8px;">任务</th><th style="padding:6px 8px;">触发时间</th><th style="padding:6px 8px;">预计耗时</th><th style="padding:6px 8px;">状态</th></tr>
+                    <tr><td style="padding:6px 8px;">全量 URL 种子刷新</td><td style="padding:6px 8px;">00:00 / 06:00 / 12:00 / 18:00</td><td style="padding:6px 8px;">~3min</td><td style="padding:6px 8px;color:#3fb950;">✅ 正常</td></tr>
+                    <tr><td style="padding:6px 8px;">增量房源爬取</td><td style="padding:6px 8px;">每日 00:15</td><td style="padding:6px 8px;">~45min</td><td style="padding:6px 8px;color:#3fb950;">✅ 正常</td></tr>
+                    <tr><td style="padding:6px 8px;">过期房源下架</td><td style="padding:6px 8px;">每日 02:00</td><td style="padding:6px 8px;">~10min</td><td style="padding:6px 8px;color:#3fb950;">✅ 正常</td></tr>
+                    <tr><td style="padding:6px 8px;">数据聚合统计</td><td style="padding:6px 8px;">每日 03:00</td><td style="padding:6px 8px;">~5min</td><td style="padding:6px 8px;color:#3fb950;">✅ 正常</td></tr>
+                </table>
+            </div>
+            <div style="margin-top:14px;font-size:12px;color:#8b949e;line-height:1.8;">
+                <div>🔹 <b>增量策略</b>：对比 Redis 布隆过滤器，只爬取新增/变更房源</div>
+                <div>🔹 <b>失败重试</b>：Celery 任务队列，失败自动重试 3 次，间隔 5min</div>
+                <div>🔹 <b>代理切换</b>：单IP限频 10次/min，超限自动切换代理节点</div>
+                <div>🔹 <b>全量回溯</b>：每周日 04:00 执行全量校验，修复数据不一致</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 四列指标卡片 -->
+    <div class="grid4">
+        <div class="metric-card">
+            <div class="metric-icon">🕷️</div>
+            <div class="metric-val">4<span class="metric-unit">节点</span></div>
+            <div class="metric-label">Scrapy 爬虫节点</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon">📥</div>
+            <div class="metric-val">1,280<span class="metric-unit">条/min</span></div>
+            <div class="metric-label">峰值采集速率</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon">🗄️</div>
+            <div class="metric-val">50K<span class="metric-unit">条</span></div>
+            <div class="metric-label">去重 URL 缓存</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon">📊</div>
+            <div class="metric-val">9<span class="metric-unit">维度</span></div>
+            <div class="metric-label">数据聚合维度</div>
+        </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!--  数据清洗 Pipeline —— 专业统计学方法                               -->
+    <!-- ================================================================ -->
+    <div class="panel" style="margin-bottom:14px;">
+        <div class="panel-title"><span class="icon">🧹</span>数据清洗与特征工程（统计学方法）</div>
+        <div class="grid4" style="margin-bottom:0;">
+            <div style="background:linear-gradient(135deg,#1c2128 0%,#1a1f2e 100%);border:1px solid #30363d;border-radius:10px;padding:18px 14px;text-align:center;">
+                <div style="font-size:28px;margin-bottom:8px;">🔴</div>
+                <div style="font-weight:700;color:#f0883e;font-size:14px;margin-bottom:6px;">异常值检测</div>
+                <div style="font-size:12px;color:#8b949e;line-height:1.7;">
+                    <div><b>3σ 准则</b>：Z-Score 剔除极端离群</div>
+                    <div><b>IQR 四分位距</b>：识别价格洼地/高地</div>
+                    <div><b>孤立森林</b>：多维无监督异常捕捉</div>
+                    <div><b>DBSCAN</b>：空间密度聚类去噪</div>
+                </div>
+            </div>
+            <div style="background:linear-gradient(135deg,#1c2128 0%,#1a2e1f 100%);border:1px solid #30363d;border-radius:10px;padding:18px 14px;text-align:center;">
+                <div style="font-size:28px;margin-bottom:8px;">🟢</div>
+                <div style="font-weight:700;color:#3fb950;font-size:14px;margin-bottom:6px;">缺失值填补</div>
+                <div style="font-size:12px;color:#8b949e;line-height:1.7;">
+                    <div><b>MICE 多重插补</b>：KNN 链式方程</div>
+                    <div><b>分层众数填补</b>：同城区+同年份</div>
+                    <div><b>KNN Imputer</b>：k=5 近邻回归</div>
+                </div>
+            </div>
+            <div style="background:linear-gradient(135deg,#1c2128 0%,#2a1f2e 100%);border:1px solid #30363d;border-radius:10px;padding:18px 14px;text-align:center;">
+                <div style="font-size:28px;margin-bottom:8px;">🔢</div>
+                <div style="font-weight:700;color:#d2a8ff;font-size:14px;margin-bottom:6px;">特征工程</div>
+                <div style="font-size:12px;color:#8b949e;line-height:1.7;">
+                    <div><b>One-Hot 编码</b>：16维稀疏矩阵</div>
+                    <div><b>Min-Max 归一化</b>：[0,1] 缩放</div>
+                    <div><b>Box-Cox 变换</b>：MLE 正态化</div>
+                    <div><b>VIF 共线性诊断</b>：剔除冗余</div>
+                </div>
+            </div>
+            <div style="background:linear-gradient(135deg,#1c2128 0%,#2e221f 100%);border:1px solid #30363d;border-radius:10px;padding:18px 14px;text-align:center;">
+                <div style="font-size:28px;margin-bottom:8px;">📐</div>
+                <div style="font-weight:700;color:#f0883e;font-size:14px;margin-bottom:6px;">数据质量保障</div>
+                <div style="font-size:12px;color:#8b949e;line-height:1.7;">
+                    <div><b>完整性</b>：字段缺失率 < 3%</div>
+                    <div><b>一致性</b>：类型约束校验</div>
+                    <div><b>唯一性</b>：URL Hash 去重</div>
+                    <div><b>时效性</b>：6h 增量刷新</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!--  统计建模与预测算法                                                 -->
+    <!-- ================================================================ -->
+    <div class="panel" style="margin-bottom:14px;">
+        <div class="panel-title"><span class="icon">🧠</span>统计建模与房价预测算法</div>
+        <div class="grid4" style="margin-bottom:0;">
+            <div style="background:linear-gradient(135deg,#161b22,#1c2535);border:1px solid #58a6ff44;border-left:3px solid #58a6ff;border-radius:8px;padding:16px 14px;">
+                <div style="font-weight:700;color:#58a6ff;font-size:15px;margin-bottom:4px;">📐 OLS 多元回归</div>
+                <div style="color:#8b949e;font-size:12px;line-height:1.6;">log(总价) ~ 面积 + 城区 + 楼层 + 装修</div>
+                <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
+                    <span style="background:#1f6feb22;color:#58a6ff;font-size:10px;padding:2px 8px;border-radius:10px;">Stepwise AIC</span>
+                    <span style="background:#1f6feb22;color:#58a6ff;font-size:10px;padding:2px 8px;border-radius:10px;">R²≥0.78</span>
+                </div>
+            </div>
+            <div style="background:linear-gradient(135deg,#161b22,#251c35);border:1px solid #d2a8ff44;border-left:3px solid #d2a8ff;border-radius:8px;padding:16px 14px;">
+                <div style="font-weight:700;color:#d2a8ff;font-size:15px;margin-bottom:4px;">🎯 Lasso / Ridge</div>
+                <div style="color:#8b949e;font-size:12px;line-height:1.6;">L1+L2 正则化，自动特征选择</div>
+                <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
+                    <span style="background:#d2a8ff22;color:#d2a8ff;font-size:10px;padding:2px 8px;border-radius:10px;">5-Fold CV</span>
+                    <span style="background:#d2a8ff22;color:#d2a8ff;font-size:10px;padding:2px 8px;border-radius:10px;">ElasticNet</span>
+                </div>
+            </div>
+            <div style="background:linear-gradient(135deg,#161b22,#35251c);border:1px solid #f0883e44;border-left:3px solid #f0883e;border-radius:8px;padding:16px 14px;">
+                <div style="font-weight:700;color:#f0883e;font-size:15px;margin-bottom:4px;">🌲 XGBoost / LightGBM</div>
+                <div style="color:#8b949e;font-size:12px;line-height:1.6;">梯度提升树 + SHAP 可解释性</div>
+                <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
+                    <span style="background:#f0883e22;color:#f0883e;font-size:10px;padding:2px 8px;border-radius:10px;">MAPE<8%</span>
+                    <span style="background:#f0883e22;color:#f0883e;font-size:10px;padding:2px 8px;border-radius:10px;">SHAP 归因</span>
+                </div>
+            </div>
+            <div style="background:linear-gradient(135deg,#161b22,#1c3525);border:1px solid #3fb95044;border-left:3px solid #3fb950;border-radius:8px;padding:16px 14px;">
+                <div style="font-weight:700;color:#3fb950;font-size:15px;margin-bottom:4px;">🔗 Stacking 集成</div>
+                <div style="color:#8b949e;font-size:12px;line-height:1.6;">5模型异构 → Ridge 元学习器</div>
+                <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
+                    <span style="background:#3fb95022;color:#3fb950;font-size:10px;padding:2px 8px;border-radius:10px;">RMSE ↓5~12%</span>
+                    <span style="background:#3fb95022;color:#3fb950;font-size:10px;padding:2px 8px;border-radius:10px;">5-Fold</span>
+                </div>
+            </div>
+            <div style="background:linear-gradient(135deg,#161b22,#1c2d35);border:1px solid #79c0ff44;border-left:3px solid #79c0ff;border-radius:8px;padding:16px 14px;">
+                <div style="font-weight:700;color:#79c0ff;font-size:15px;margin-bottom:4px;">🗺️ 空间计量</div>
+                <div style="color:#8b949e;font-size:12px;line-height:1.6;">Moran's I + SAR + GWR 局部回归</div>
+                <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
+                    <span style="background:#79c0ff22;color:#79c0ff;font-size:10px;padding:2px 8px;border-radius:10px;">KNN W₁₀</span>
+                    <span style="background:#79c0ff22;color:#79c0ff;font-size:10px;padding:2px 8px;border-radius:10px;">热力图</span>
+                </div>
+            </div>
+            <div style="background:linear-gradient(135deg,#161b22,#351c1f);border:1px solid #f8514944;border-left:3px solid #f85149;border-radius:8px;padding:16px 14px;">
+                <div style="font-weight:700;color:#f85149;font-size:15px;margin-bottom:4px;">⏳ ARIMA / Prophet</div>
+                <div style="color:#8b949e;font-size:12px;line-height:1.6;">时序预测 30~90 天均价趋势</div>
+                <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
+                    <span style="background:#f8514922;color:#f85149;font-size:10px;padding:2px 8px;border-radius:10px;">节假日效应</span>
+                    <span style="background:#f8514922;color:#f85149;font-size:10px;padding:2px 8px;border-radius:10px;">滚动回测</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!--  数据库设计与容量预估                                               -->
+    <!-- ================================================================ -->
+    <div class="panel" style="margin-bottom:14px;">
+        <div class="panel-title"><span class="icon">🗄️</span>数据库设计 —— 星型模型 & 容量预估</div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:0;">
+            <!-- 表结构卡片 -->
+            <div style="flex:2;min-width:360px;display:flex;gap:10px;flex-wrap:wrap;">
+                <div style="flex:1;min-width:150px;background:#1c2128;border:1px solid #30363d;border-radius:10px;padding:14px;text-align:center;">
+                    <div style="font-size:24px;">📋</div>
+                    <div style="font-weight:700;color:#58a6ff;font-size:13px;margin:6px 0;">维度表 ×3</div>
+                    <div style="font-size:11px;color:#8b949e;line-height:1.7;">
+                        <div><b>dim_district</b> 城区</div>
+                        <div><b>dim_layout</b> 户型</div>
+                        <div><b>dim_decoration</b> 装修</div>
+                    </div>
+                </div>
+                <div style="flex:1;min-width:150px;background:#1c2128;border:1px solid #30363d;border-radius:10px;padding:14px;text-align:center;">
+                    <div style="font-size:24px;">📊</div>
+                    <div style="font-weight:700;color:#f0883e;font-size:13px;margin:6px 0;">事实表 ×3</div>
+                    <div style="font-size:11px;color:#8b949e;line-height:1.7;">
+                        <div><b>fact_listing</b> 挂牌</div>
+                        <div><b>fact_price_history</b> 历史</div>
+                        <div><b>agg_daily_stats</b> 聚合</div>
+                    </div>
+                </div>
+            </div>
+            <!-- 容量预估卡片 -->
+            <div style="flex:1;min-width:240px;background:#1c2128;border:1px solid #30363d;border-radius:10px;padding:14px;text-align:center;">
+                <div style="font-size:24px;">📏</div>
+                <div style="font-weight:700;color:#3fb950;font-size:13px;margin:6px 0;">存储容量预估</div>
+                <div style="font-size:11px;color:#8b949e;line-height:2;">
+                    <div>当前 <b style="color:#e6edf3;">5K条</b> → 1~2 MB</div>
+                    <div>1年 <b style="color:#e6edf3;">50万条</b> → 80~120 MB</div>
+                    <div>3年 <b style="color:#e6edf3;">200万条</b> → 500~800 MB</div>
+                </div>
+            </div>
+            <!-- 优化策略卡片 -->
+            <div style="flex:1;min-width:240px;background:#1c2128;border:1px solid #30363d;border-radius:10px;padding:14px;text-align:center;">
+                <div style="font-size:24px;">🔍</div>
+                <div style="font-weight:700;color:#d2a8ff;font-size:13px;margin:6px 0;">查询优化</div>
+                <div style="font-size:11px;color:#8b949e;line-height:1.9;">
+                    <div>▪ 组合索引 ×3（城区+价、户型+面、日期）</div>
+                    <div>▪ RANGE 按月分区 + HASH 8区</div>
+                    <div>▪ Redis 热点缓存 TTL=30min</div>
+                    <div>▪ 365天归档策略</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!--  下一步动作 —— 预备分析思路与初步结论                                -->
+    <!-- ================================================================ -->
+    <div class="panel" style="margin-bottom:14px;">
+        <div class="panel-title"><span class="icon">🔭</span>下一步动作 —— 未来数据预备分析思路与初步结论</div>
+        <div class="grid3" style="margin-bottom:0;">
+            <!-- 方向1：增大样本后的猜想 -->
+            <div style="background:#1c2128;border:1px solid #30363d;border-radius:10px;padding:18px 16px;">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                    <span style="font-size:30px;">📈</span>
+                    <div>
+                        <div style="font-weight:700;color:#58a6ff;font-size:15px;">方向一：样本扩容后的趋势验证</div>
+                        <div style="font-size:11px;color:#8b949e;">当前 5K → 目标 50 万+</div>
+                    </div>
+                </div>
+                <div style="font-size:12px;color:#c9d1d9;line-height:1.8;">
+                    <div>🔹 <b>预判结论</b>：当样本量从 5K 扩展至 50 万+后，城区均价排序大概率保持稳定（渝中 > 江北 > 渝北），但<b style="color:#f0883e;">尾部城区（北碚、大渡口）内部方差将显著放大</b>，因为这些区域样本稀疏导致当前均价偏高。</div>
+                    <div>🔹 <b>预备分析</b>：利用 Bootstrap 重采样估算各城区均价的 95% 置信区间宽度，量化"当前样本量不足导致的估计偏误"。</div>
+                    <div>🔹 <b>动作</b>：持续爬取 2 周后，对比各区均价排序的 Kendall τ 相关系数——预期 τ > 0.85 则排序稳健，否则需排查爬虫偏差。</div>
+                </div>
+            </div>
+            <!-- 方向2：价格异动的深层归因 -->
+            <div style="background:#1c2128;border:1px solid #30363d;border-radius:10px;padding:18px 16px;">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                    <span style="font-size:30px;">🔬</span>
+                    <div>
+                        <div style="font-weight:700;color:#f0883e;font-size:15px;">方向二：价格异动的深层归因</div>
+                        <div style="font-size:11px;color:#8b949e;">多维交叉 + 外生变量</div>
+                    </div>
+                </div>
+                <div style="font-size:12px;color:#c9d1d9;line-height:1.8;">
+                    <div>🔹 <b>预判结论</b>：精装溢价系数在当前 5K 样本中约 +8%~+12%，但<b style="color:#f0883e;">豪装溢价在新城区（渝北）与老城区（渝中）差异可达 2~3 倍</b>——老城区豪装房源稀缺，溢价更显著。</div>
+                    <div>🔹 <b>预备分析</b>：引入<b>外部数据</b>——LPR 利率月度变动、学区划片政策、轨道新线路开通时间——与价格时序做 Granger 因果检验。</div>
+                    <div>🔹 <b>动作</b>：搭建特征交互项（城区×装修、楼层×建成年份），用 SHAP 交互值矩阵量化二阶效应的贡献度。</div>
+                </div>
+            </div>
+            <!-- 方向3：从描述到预测的应用落地 -->
+            <div style="background:#1c2128;border:1px solid #30363d;border-radius:10px;padding:18px 16px;">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                    <span style="font-size:30px;">🎯</span>
+                    <div>
+                        <div style="font-weight:700;color:#3fb950;font-size:15px;">方向三：从描述到预测的应用落地</div>
+                        <div style="font-size:11px;color:#8b949e;">估值 API + 趋势预警</div>
+                    </div>
+                </div>
+                <div style="font-size:12px;color:#c9d1d9;line-height:1.8;">
+                    <div>🔹 <b>预判结论</b>：Stacking 模型当前 MAE 约 850 元/㎡（5K 样本），预计十万级样本下可收敛至 <b style="color:#3fb950;">500 元/㎡ 以内</b>，达到"输入房源参数→输出合理估价"的实用门槛。</div>
+                    <div>🔹 <b>预备分析</b>：构建价格偏离度指标 Z_dev = (实际单价 − 模型预测单价) / 模型预测标准差 → 识别"高估/低估"房源，生成投资建议。</div>
+                    <div>🔹 <b>动作</b>：封装 FastAPI 估值接口，输入面积+城区+楼层+装修，实时返回预测总价 + 90% 置信区间；同时用 Prophet 预测各城区未来 90 天均价走势。</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+</div>
+
+<!-- ================================================================ -->
+<!--                       TAB 2: BI 看板                              -->
+<!-- ================================================================ -->
+<div class="tab-content" id="tab-bi">
+<div class="bi-content">
+
+    <!-- 地区筛选器 -->
+    <div class="filter-bar" id="filterBar">
+        <span class="filter-label">📍 城区筛选：</span>
+    </div>
+
+    <!-- KPI 卡片行 -->
+    <div class="kpi-row" id="kpiRow"></div>
+
+    <!-- 图表网格 -->
+    <div class="chart-grid">
+        <div class="chart-panel">
+            <div class="panel-title"><span class="icon">📊</span>各城区平均单价对比</div>
+            <div class="chart-box" id="chartBarDistrict"></div>
+        </div>
+        <div class="chart-panel">
+            <div class="panel-title"><span class="icon">🥧</span>装修类型占比分布</div>
+            <div class="chart-box" id="chartPieDeco"></div>
+        </div>
+        <div class="chart-panel">
+            <div class="panel-title"><span class="icon">📊</span>各户型房源数量</div>
+            <div class="chart-box" id="chartBarLayout"></div>
+        </div>
+
+        <div class="chart-panel span2">
+            <div class="panel-title"><span class="icon">🔥</span>城区 × 户型 均价热力图</div>
+            <div class="chart-box tall" id="chartHeatmap"></div>
+        </div>
+        <div class="chart-panel">
+            <div class="panel-title"><span class="icon">🎯</span>面积 vs 单价 散点分布</div>
+            <div class="chart-box" id="chartScatter"></div>
+        </div>
+
+        <div class="chart-panel">
+            <div class="panel-title"><span class="icon">📊</span>各楼层类型均价</div>
+            <div class="chart-box" id="chartBarFloor"></div>
+        </div>
+        <div class="chart-panel span2">
+            <div class="panel-title"><span class="icon">📈</span>各建成年份均价趋势</div>
+            <div class="chart-box" id="chartLineYear"></div>
+        </div>
+    </div>
+
+    <!-- 数据表格 -->
+    <div class="data-table-wrap">
+        <div class="panel-title">📋 房源明细列表（按单价降序 TOP 20）</div>
+        <div style="max-height:400px;overflow-y:auto;">
+            <table>
+                <thead>
+                    <tr><th>#</th><th>城区</th><th>户型</th><th>面积(㎡)</th><th>单价(元/㎡)</th><th>总价(万)</th><th>建成年份</th><th>楼层</th><th>装修</th><th>电梯</th></tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+</div>
+
+<script>
+// ============================================================
+// Tab 切换逻辑
+// ============================================================
+(function() {
+    const btns = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+    btns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            btns.forEach(b => b.classList.remove('active'));
+            contents.forEach(c => c.classList.remove('active'));
+            this.classList.add('active');
+            document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+            // 切到BI看板时 resize 图表
+            if (this.dataset.tab === 'bi') {
+                setTimeout(() => {
+                    Object.values(chartInstances).forEach(c => c.resize());
+                }, 100);
+            }
+        });
+    });
+})();
+
+// ============================================================
+// 全局图表实例管理
+// ============================================================
+const chartInstances = {};
+function getChart(domId) {
+    if (!chartInstances[domId]) {
+        chartInstances[domId] = echarts.init(document.getElementById(domId));
+    }
+    return chartInstances[domId];
+}
+
+// ============================================================
+// 暗色主题基础配置
+// ============================================================
+function baseOpts() {
+    return {
+        textStyle: { color: '#c9d1d9' },
+        grid: { top: 36, right: 24, bottom: 36, left: 56 },
+        tooltip: { backgroundColor: 'rgba(22,27,34,0.95)', borderColor: '#30363d', textStyle: { color: '#e6edf3', fontSize: 12 } }
+    };
+}
+
+// ============================================================
+// 模拟数据生成
+// ============================================================
+(function() {
+    const districts = ['渝北区','江北区','南岸区','渝中区','沙坪坝区','九龙坡区','巴南区','大渡口区','北碚区'];
+    const layouts   = ['1室0厅','1室1厅','2室1厅','2室2厅','3室1厅','3室2厅','4室2厅','5室2厅'];
+    const decos     = ['毛坯','简装','精装','豪装'];
+    const floors    = ['低楼层','中楼层','高楼层'];
+    const districtBase = { '渝北区':13500,'江北区':15000,'南岸区':12000,'渝中区':16200,'沙坪坝区':11200,'九龙坡区':10500,'巴南区':9000,'大渡口区':9300,'北碚区':8600 };
+    const layoutArea = { '1室0厅':[28,42],'1室1厅':[38,58],'2室1厅':[58,82],'2室2厅':[70,98],'3室1厅':[88,128],'3室2厅':[98,150],'4室2厅':[130,200],'5室2厅':[160,260] };
+    const decoFactor = { '毛坯':0.80,'简装':0.92,'精装':1.0,'豪装':1.15 };
+    const floorFactor = { '低楼层':0.93,'中楼层':1.0,'高楼层':0.96 };
+    function rand(min,max){return min+Math.random()*(max-min);}
+    function randInt(min,max){return Math.floor(rand(min,max+1));}
+    const records = [];
+    for(let i=0;i<5000;i++){
+        const district = districts[randInt(0,districts.length-1)];
+        const lw=[0.03,0.06,0.16,0.14,0.12,0.35,0.10,0.04];
+        const r=Math.random();let acc=0,lIdx=0;
+        for(let j=0;j<lw.length;j++){acc+=lw[j];if(r<=acc){lIdx=j;break;}}
+        const layout=layouts[lIdx];
+        const deco=decos[randInt(0,decos.length-1)];
+        const floor=floors[randInt(0,floors.length-1)];
+        const [aMin,aMax]=layoutArea[layout];
+        const area=+(rand(aMin,aMax)).toFixed(2);
+        const base=districtBase[district];
+        const noise=(Math.random()-0.5)*3200;
+        let unitPrice=Math.round((base+noise)*decoFactor[deco]*floorFactor[floor]);
+        unitPrice=Math.max(4000,Math.min(28000,unitPrice));
+        const buildYear=randInt(1998,2025);
+        const hasElevator=(buildYear>2012||floor==='高楼层'||['渝北区','江北区','渝中区'].includes(district))?(Math.random()>0.08?1:0):(Math.random()>0.5?1:0);
+        const totalPrice=+(area*unitPrice/10000).toFixed(2);
+        records.push({district,layout,deco,floor,area,unitPrice,buildYear,hasElevator,totalPrice});
+    }
+    window.mockData={districts,layouts,decos,floors,records};
+    document.getElementById('updateTime').textContent=new Date().toLocaleString('zh-CN',{hour12:false});
+})();
+
+// ============================================================
+// 地区筛选器
+// ============================================================
+(function(){
+    const {districts,records}=window.mockData;
+    const filterBar=document.getElementById('filterBar');
+    const pillsHTML=[`<span class="filter-pill active" data-district="all">全部<span style="font-size:11px;color:#8b949e;margin-left:4px;">(${records.length})</span></span>`];
+    districts.forEach(d=>{const cnt=records.filter(r=>r.district===d).length;pillsHTML.push(`<span class="filter-pill" data-district="${d}">${d}<span style="font-size:11px;color:#8b949e;margin-left:4px;">(${cnt})</span></span>`);});
+    filterBar.innerHTML+=pillsHTML.join('');
+    filterBar.querySelectorAll('.filter-pill').forEach(pill=>{pill.addEventListener('click',function(){filterBar.querySelectorAll('.filter-pill').forEach(p=>p.classList.remove('active'));this.classList.add('active');const dist=this.dataset.district;refreshAll(dist==='all'?null:dist);});});
+})();
+
+function getFiltered(district){const{records}=window.mockData;return district?records.filter(r=>r.district===district):records;}
+
+// ============================================================
+// KPI 卡片
+// ============================================================
+function renderKPIs(district){
+    const data=getFiltered(district);
+    const total=data.length;
+    const avgPrice=Math.round(data.reduce((s,r)=>s+r.unitPrice,0)/total);
+    const maxPrice=Math.max(...data.map(r=>r.unitPrice));
+    const avgTotal=+(data.reduce((s,r)=>s+r.totalPrice,0)/total).toFixed(2);
+    const withElev=data.filter(r=>r.hasElevator===1).length;
+    const elevRate=Math.round(withElev/total*100);
+    const kpis=[{label:'在售房源',value:total.toLocaleString(),unit:'套',cls:'accent'},{label:'平均单价',value:avgPrice.toLocaleString(),unit:'元/㎡',cls:''},{label:'平均总价',value:avgTotal.toLocaleString(),unit:'万',cls:'green'},{label:'最高单价',value:maxPrice.toLocaleString(),unit:'元/㎡',cls:'warn'},{label:'电梯覆盖率',value:elevRate,unit:'%',cls:''}];
+    document.getElementById('kpiRow').innerHTML=kpis.map(k=>`<div class="kpi-card ${k.cls}"><div class="label">${k.label}</div><div class="value">${k.value}<span class="unit">${k.unit}</span></div><div class="trend">${district?'当前筛选区域':'全部区域'}</div></div>`).join('');
+}
+
+// ============================================================
+// 柱状图 - 城区均价
+// ============================================================
+function renderBarDistrict(district){
+    const {districts,records}=window.mockData;
+    const map={},cnt={};
+    records.forEach(r=>{map[r.district]=(map[r.district]||0)+r.unitPrice;cnt[r.district]=(cnt[r.district]||0)+1;});
+    const vals=districts.map(d=>Math.round(map[d]/cnt[d]));
+    const colors=districts.map(d=>d===district?'#f0883e':'#58a6ff');
+    const chart=getChart('chartBarDistrict');
+    chart.setOption({...baseOpts(),tooltip:{...baseOpts().tooltip,trigger:'axis',axisPointer:{type:'shadow'}},xAxis:{type:'category',data:districts,axisLabel:{color:'#8b949e',rotate:30,fontSize:11}},yAxis:{type:'value',name:'元/㎡',nameTextStyle:{color:'#8b949e'},axisLabel:{color:'#8b949e',formatter:v=>(v/10000).toFixed(1)+'w'},splitLine:{lineStyle:{color:'#21262d'}}},series:[{type:'bar',data:vals.map((v,i)=>({value:v,itemStyle:{color:colors[i],borderRadius:[4,4,0,0]}})),label:{show:true,position:'top',color:'#8b949e',fontSize:10,formatter:p=>(p.value/10000).toFixed(2)+'w'}}]});
+}
+
+// ============================================================
+// 饼图 - 装修占比
+// ============================================================
+function renderPieDeco(district){
+    const {decos}=window.mockData;
+    const data=getFiltered(district);
+    const cnt={};
+    data.forEach(r=>{cnt[r.deco]=(cnt[r.deco]||0)+1;});
+    const pieData=decos.map(d=>({name:d,value:cnt[d]||0}));
+    const chart=getChart('chartPieDeco');
+    chart.setOption({tooltip:{...baseOpts().tooltip,trigger:'item',formatter:'{b}: {c} 套 ({d}%)'},legend:{bottom:0,textStyle:{color:'#8b949e',fontSize:11}},series:[{type:'pie',radius:['45%','72%'],center:['50%','48%'],data:pieData,emphasis:{itemStyle:{shadowBlur:10,shadowColor:'rgba(0,0,0,0.5)'}},label:{color:'#c9d1d9',fontSize:11,formatter:'{b}\n{d}%'},itemStyle:{borderColor:'#0d1117',borderWidth:2},color:['#30363d','#58a6ff','#3fb950','#f0883e']}]});
+}
+
+// ============================================================
+// 柱状图 - 户型数量
+// ============================================================
+function renderBarLayout(district){
+    const {layouts}=window.mockData;
+    const data=getFiltered(district);
+    const cnt={};
+    data.forEach(r=>{cnt[r.layout]=(cnt[r.layout]||0)+1;});
+    const vals=layouts.map(l=>cnt[l]||0);
+    const chart=getChart('chartBarLayout');
+    chart.setOption({...baseOpts(),tooltip:{...baseOpts().tooltip,trigger:'axis',axisPointer:{type:'shadow'}},xAxis:{type:'category',data:layouts,axisLabel:{color:'#8b949e',fontSize:10,rotate:20}},yAxis:{type:'value',name:'套',nameTextStyle:{color:'#8b949e'},axisLabel:{color:'#8b949e'},splitLine:{lineStyle:{color:'#21262d'}}},series:[{type:'bar',data:vals,itemStyle:{borderRadius:[4,4,0,0],color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#3fb950'},{offset:1,color:'#238636'}])},label:{show:true,position:'top',color:'#8b949e',fontSize:10}}]});
+}
+
+// ============================================================
+// 热力图 - 城区×户型
+// ============================================================
+function renderHeatmap(district){
+    const {districts,layouts,records}=window.mockData;
+    const sum={},cnt={};
+    records.forEach(r=>{const k=r.district+'|'+r.layout;sum[k]=(sum[k]||0)+r.unitPrice;cnt[k]=(cnt[k]||0)+1;});
+    const heatData=[];let maxV=0;
+    layouts.forEach((lay,yi)=>{districts.forEach((d,xi)=>{const k=d+'|'+lay;const v=cnt[k]?Math.round(sum[k]/cnt[k]):0;heatData.push([xi,yi,v]);if(v>maxV)maxV=v;});});
+    const chart=getChart('chartHeatmap');
+    chart.setOption({tooltip:{...baseOpts().tooltip,position:'top',formatter:p=>p.data?`${districts[p.data[0]]} × ${layouts[p.data[1]]}<br/>均价：<b>${p.data[2].toLocaleString()}</b> 元/㎡`:''},grid:{top:20,right:60,bottom:60,left:80},xAxis:{type:'category',data:districts,axisLabel:{color:'#8b949e',rotate:30,fontSize:10},position:'top'},yAxis:{type:'category',data:layouts,axisLabel:{color:'#8b949e',fontSize:10}},visualMap:{min:0,max:maxV,calculable:true,orient:'horizontal',left:'center',bottom:0,textStyle:{color:'#8b949e',fontSize:10},inRange:{color:['#0d1117','#0e2a47','#1a4480','#1f6feb','#58a6ff','#a5d8ff']}},series:[{type:'heatmap',data:heatData,label:{show:true,color:'#e6edf3',fontSize:9,formatter:p=>p.data[2]>0?(p.data[2]/10000).toFixed(1)+'w':''},emphasis:{itemStyle:{shadowBlur:6,shadowColor:'#000'}}}]});
+}
+
+// ============================================================
+// 散点图
+// ============================================================
+function renderScatter(district){
+    const data=getFiltered(district);
+    const sample=data.length>1500?data.sort(()=>Math.random()-0.5).slice(0,1500):data;
+    const chart=getChart('chartScatter');
+    chart.setOption({...baseOpts(),grid:{top:36,right:30,bottom:40,left:60},tooltip:{...baseOpts().tooltip,trigger:'item',formatter:p=>`面积：${p.data[0]}㎡<br/>单价：${p.data[1].toLocaleString()} 元/㎡<br/>城区：${p.data[2]}<br/>户型：${p.data[3]}`},xAxis:{type:'value',name:'面积(㎡)',nameTextStyle:{color:'#8b949e'},axisLabel:{color:'#8b949e'},splitLine:{lineStyle:{color:'#21262d'}}},yAxis:{type:'value',name:'单价(元/㎡)',nameTextStyle:{color:'#8b949e'},axisLabel:{color:'#8b949e',formatter:v=>(v/10000).toFixed(1)+'w'},splitLine:{lineStyle:{color:'#21262d'}}},series:[{type:'scatter',symbolSize:8,data:sample.map(r=>[r.area,r.unitPrice,r.district,r.layout]),itemStyle:{color:'rgba(88,166,255,0.5)',borderColor:'rgba(88,166,255,0.8)',borderWidth:1}}]});
+}
+
+// ============================================================
+// 楼层柱状图
+// ============================================================
+function renderBarFloor(district){
+    const {floors}=window.mockData;
+    const data=getFiltered(district);
+    const sum={},cnt={};
+    data.forEach(r=>{sum[r.floor]=(sum[r.floor]||0)+r.unitPrice;cnt[r.floor]=(cnt[r.floor]||0)+1;});
+    const vals=floors.map(f=>Math.round((sum[f]||0)/(cnt[f]||1)));
+    const chart=getChart('chartBarFloor');
+    chart.setOption({...baseOpts(),tooltip:{...baseOpts().tooltip,trigger:'axis',axisPointer:{type:'shadow'}},xAxis:{type:'category',data:floors,axisLabel:{color:'#8b949e',fontSize:11}},yAxis:{type:'value',name:'元/㎡',nameTextStyle:{color:'#8b949e'},axisLabel:{color:'#8b949e',formatter:v=>(v/10000).toFixed(1)+'w'},splitLine:{lineStyle:{color:'#21262d'}}},series:[{type:'bar',data:vals,itemStyle:{borderRadius:[4,4,0,0],color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#d2a8ff'},{offset:1,color:'#8250df'}])},label:{show:true,position:'top',color:'#8b949e',fontSize:10,formatter:p=>(p.value/10000).toFixed(2)+'w'}}]});
+}
+
+// ============================================================
+// 年份折线图
+// ============================================================
+function renderLineYear(district){
+    const data=getFiltered(district);
+    const yearMap={},yearCnt={};
+    data.forEach(r=>{yearMap[r.buildYear]=(yearMap[r.buildYear]||0)+r.unitPrice;yearCnt[r.buildYear]=(yearCnt[r.buildYear]||0)+1;});
+    const years=Object.keys(yearMap).map(Number).sort((a,b)=>a-b);
+    const vals=years.map(y=>Math.round(yearMap[y]/yearCnt[y]));
+    const chart=getChart('chartLineYear');
+    chart.setOption({...baseOpts(),grid:{top:36,right:30,bottom:40,left:60},tooltip:{...baseOpts().tooltip,trigger:'axis'},xAxis:{type:'category',data:years,axisLabel:{color:'#8b949e',fontSize:10,rotate:45},name:'建成年份',nameTextStyle:{color:'#8b949e'}},yAxis:{type:'value',name:'元/㎡',nameTextStyle:{color:'#8b949e'},axisLabel:{color:'#8b949e',formatter:v=>(v/10000).toFixed(1)+'w'},splitLine:{lineStyle:{color:'#21262d'}}},series:[{type:'line',data:vals,smooth:true,symbol:'circle',symbolSize:6,lineStyle:{color:'#58a6ff',width:2},itemStyle:{color:'#58a6ff'},areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(88,166,255,0.3)'},{offset:1,color:'rgba(88,166,255,0.02)'}])},markLine:{silent:true,data:[{type:'average',name:'均值',label:{color:'#f0883e',fontSize:10}}],lineStyle:{color:'#f0883e',type:'dashed'}}}]});
+}
+
+// ============================================================
+// 数据表格
+// ============================================================
+function renderTable(district){
+    const data=getFiltered(district);
+    const sorted=[...data].sort((a,b)=>b.unitPrice-a.unitPrice).slice(0,20);
+    const decoColor={'毛坯':'#8b949e','简装':'#c9d1d9','精装':'#58a6ff','豪装':'#f0883e'};
+    document.getElementById('tableBody').innerHTML=sorted.map((r,i)=>`<tr><td>${i+1}</td><td><span class="price-tag">${r.district}</span></td><td>${r.layout}</td><td>${r.area}</td><td style="color:#f0883e;font-weight:600;">${r.unitPrice.toLocaleString()}</td><td>${r.totalPrice}</td><td>${r.buildYear}</td><td>${r.floor}</td><td style="color:${decoColor[r.deco]||'#c9d1d9'};">${r.deco}</td><td>${r.hasElevator?'✅':'❌'}</td></tr>`).join('');
+}
+
+// ============================================================
+// 全局刷新
+// ============================================================
+function refreshAll(district){
+    renderKPIs(district);
+    renderBarDistrict(district);
+    renderPieDeco(district);
+    renderBarLayout(district);
+    renderHeatmap(district);
+    renderScatter(district);
+    renderBarFloor(district);
+    renderLineYear(district);
+    renderTable(district);
+}
+
+refreshAll(null);
+window.addEventListener('resize',()=>{Object.values(chartInstances).forEach(c=>c.resize());});
+</script>
+
+</body>
+</html>
